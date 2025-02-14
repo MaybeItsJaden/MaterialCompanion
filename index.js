@@ -1,55 +1,70 @@
-import { OpenAI } from "openai";
 import express from "express";
-import cors from "cors";
+import { OpenAI } from "openai";
+import dotenv from "dotenv";
+import cors from "express-cors";
+
+dotenv.config();
 
 const app = express();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Configure CORS with specific options
-const corsOptions = {
-  origin: "*", // Allow all origins
-  methods: ["POST", "GET", "OPTIONS"], // Allowed methods
-  allowedHeaders: ["Content-Type"], // Allowed headers
-  credentials: true, // Enable credentials
-  optionsSuccessStatus: 200, // Some legacy browsers (IE11) choke on 204
-};
+// Use cors middleware
+app.use(
+  cors({
+    allowedOrigins: ["*"],
+    headers: ["Content-Type"],
+  })
+);
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something broke!" });
+});
+
 app.post("/api", async (req, res) => {
-  const { html, url } = req.body;
-  console.log("Received request for URL:", url);
-
-  const prompt = `
-    Extract product details from this HTML page. Provide the following fields:
-    - Product Name
-    - Image URL
-    - Product Link
-    - Size (if available)
-    - Contact Information (if available)
-    
-    Respond in JSON format: { "name": "", "image": "", "link": "", "size": "", "contact": "" }
-
-    HTML content: ${html}
-  `;
-
   try {
-    console.log("Sending request to OpenAI...");
+    const { text, images, url } = req.body;
+
+    // Debug logs
+    console.log("Incoming request to /api");
+    console.log("Received URL:", url);
+    console.log("Received text length:", text ? text.length : 0);
+    console.log("Received images:", images);
+
+    const prompt = `
+      Extract product details from the following page content.
+      Return a JSON object with these fields: 
+      "name", "image", "link", "size", and "contact".
+      
+      Text: ${text}
+      Images: ${images.join(", ")}
+    `;
+
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
       temperature: 0,
     });
-    console.log("OpenAI Response:", aiResponse.choices[0].message.content);
 
-    let extractedData = JSON.parse(aiResponse.choices[0].message.content);
-    extractedData.link = url; // Ensure correct product link
+    console.log("AI raw response:", aiResponse.choices[0].message.content);
 
-    res.json(extractedData);
+    const data = JSON.parse(aiResponse.choices[0].message.content);
+    data.link = url || "";
+    res.json(data);
   } catch (error) {
-    console.error("OpenAI Error:", error);
+    console.error("Error processing request:", error);
     res.status(500).json({ error: "Failed to process data" });
   }
 });
-app.listen(3000, () => console.log("Server running on port 3000"));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(
+    "OpenAI Key:",
+    process.env.OPENAI_API_KEY ? "Loaded" : "Not found"
+  );
+});
