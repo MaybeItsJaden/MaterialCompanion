@@ -37,11 +37,12 @@ app.post("/api", async (req, res) => {
   try {
     const { text, images, url } = req.body;
 
-    // Debug logs
-    console.log("Incoming request to /api");
-    console.log("Received URL:", url);
-    console.log("Received text length:", text ? text.length : 0);
-    console.log("Received images count:", images ? images.length : 0);
+    // Enhanced debug logs
+    console.log("=== POST /api Request ===");
+    console.log("Headers:", req.headers);
+    console.log("URL:", url);
+    console.log("Text Length:", text?.length);
+    console.log("Images Count:", images?.length);
 
     const prompt = `
       Extract product details from the following page content.
@@ -52,22 +53,29 @@ app.post("/api", async (req, res) => {
       Images: ${images ? images.join(", ") : ""}
     `;
 
+    console.log("Calling OpenAI API...");
     const aiResponse = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [{ role: "user", content: prompt }],
       temperature: 0,
     });
+    console.log("OpenAI API response received");
 
-    console.log("AI response received");
     const data = JSON.parse(aiResponse.choices[0].message.content);
     data.link = url || "";
 
     res.json(data);
   } catch (error) {
-    console.error("Error processing request:", error);
+    console.error("Detailed error:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
+
     res.status(500).json({
       error: "Failed to process data",
       details: error.message,
+      type: error.name,
     });
   }
 });
