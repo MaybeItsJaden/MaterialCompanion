@@ -24,7 +24,13 @@ app.use((err, req, res, next) => {
 
 // Basic health check endpoint
 app.get("/api", (req, res) => {
-  res.json({ message: "Material Companion API is running" });
+  console.log("Health check request received");
+  console.log("Headers:", req.headers);
+  res.json({
+    message: "Material Companion API is running",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+  });
 });
 
 app.post("/api", async (req, res) => {
