@@ -7,24 +7,18 @@ dotenv.config();
 
 const app = express();
 
-// More specific CORS configuration
-app.use(
-  cors({
-    origin: ["chrome-extension://*", "https://*"],
-    methods: ["POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept", "Origin"],
-    preflightContinue: true,
-    optionsSuccessStatus: 204,
-  })
-);
+// More permissive CORS setup
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Accept, Origin");
+  res.header("Access-Control-Max-Age", "86400");
 
-// Add OPTIONS handler explicitly
-app.options("/api", (req, res) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Origin");
-  res.setHeader("Access-Control-Max-Age", "86400");
-  res.status(204).end();
+  // Handle preflight
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
 });
 
 app.use(express.json());
