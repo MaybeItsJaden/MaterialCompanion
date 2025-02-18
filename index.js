@@ -7,8 +7,16 @@ dotenv.config();
 
 const app = express();
 
-// Move CORS middleware to top, before any routes
-app.use(cors());
+// Add CORS middleware before any routes
+app.use(
+  cors({
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Accept", "Origin"],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
