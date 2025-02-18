@@ -6,18 +6,12 @@ import cors from "cors";
 dotenv.config();
 
 const app = express();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Use cors middleware
-app.use(
-  cors({
-    origin: "*",
-    methods: ["POST", "GET", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Accept"],
-  })
-);
-
+// Move CORS middleware to top, before any routes
+app.use(cors());
 app.use(express.json());
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -28,13 +22,9 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Basic health check endpoint
 app.get("/api", (req, res) => {
-  try {
-    res.json({ message: "Material Companion API is running" });
-  } catch (error) {
-    console.error("Health check error:", error);
-    res.status(500).json({ error: "Server error during health check" });
-  }
+  res.json({ message: "Material Companion API is running" });
 });
 
 app.post("/api", async (req, res) => {
