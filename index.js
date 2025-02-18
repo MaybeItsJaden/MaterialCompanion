@@ -7,15 +7,25 @@ dotenv.config();
 
 const app = express();
 
-// Add CORS middleware before any routes
+// More specific CORS configuration
 app.use(
   cors({
-    origin: "*",
-    methods: ["GET", "POST", "OPTIONS"],
+    origin: ["chrome-extension://*", "https://*"],
+    methods: ["POST", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Accept", "Origin"],
-    credentials: true,
+    preflightContinue: true,
+    optionsSuccessStatus: 204,
   })
 );
+
+// Add OPTIONS handler explicitly
+app.options("/api", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Origin");
+  res.setHeader("Access-Control-Max-Age", "86400");
+  res.status(204).end();
+});
 
 app.use(express.json());
 
