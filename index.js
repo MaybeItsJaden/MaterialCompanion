@@ -39,10 +39,15 @@ app.post("/api", async (req, res) => {
 
     // Enhanced debug logs
     console.log("=== POST /api Request ===");
-    console.log("Headers:", req.headers);
-    console.log("URL:", url);
-    console.log("Text Length:", text?.length);
-    console.log("Images Count:", images?.length);
+    console.log("Request body:", {
+      textLength: text?.length,
+      imagesCount: images?.length,
+      url,
+    });
+
+    if (!text || !images) {
+      throw new Error("Missing required fields: text and images");
+    }
 
     const prompt = `
       Extract product details from the following page content.
@@ -59,8 +64,12 @@ app.post("/api", async (req, res) => {
       messages: [{ role: "user", content: prompt }],
       temperature: 0,
     });
-    console.log("OpenAI API response received");
 
+    if (!aiResponse?.choices?.[0]?.message?.content) {
+      throw new Error("Invalid response from OpenAI");
+    }
+
+    console.log("OpenAI raw response:", aiResponse.choices[0].message.content);
     const data = JSON.parse(aiResponse.choices[0].message.content);
     data.link = url || "";
 
@@ -70,12 +79,15 @@ app.post("/api", async (req, res) => {
       message: error.message,
       stack: error.stack,
       name: error.name,
+      type: typeof error,
+      fullError: JSON.stringify(error, null, 2),
     });
 
     res.status(500).json({
       error: "Failed to process data",
       details: error.message,
       type: error.name,
+      stack: error.stack,
     });
   }
 });
