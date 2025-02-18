@@ -1,28 +1,35 @@
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
-import cors from "cors";
 
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// More permissive CORS setup
+// Manually set CORS headers on each request
 app.use((req, res, next) => {
+  // Allow any origin (for an extension that runs on all sites)
   res.header("Access-Control-Allow-Origin", "*");
+  // Allowed HTTP methods
   res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  // Allowed headers
   res.header("Access-Control-Allow-Headers", "Content-Type, Accept, Origin");
+  // How long to cache preflight response
   res.header("Access-Control-Max-Age", "86400");
 
-  // Handle preflight
+  // Handle preflight OPTIONS requests
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
+
   next();
 });
 
+// Parse JSON bodies
 app.use(express.json());
 
+// Initialize OpenAI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 // Error handling middleware
@@ -34,7 +41,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Basic health check endpoint
+// Basic health check endpoint (GET /api)
 app.get("/api", (req, res) => {
   console.log("Health check request received");
   console.log("Headers:", req.headers);
@@ -45,11 +52,12 @@ app.get("/api", (req, res) => {
   });
 });
 
+// Main POST endpoint (POST /api)
 app.post("/api", async (req, res) => {
   try {
     const { text, images, url } = req.body;
 
-    // Enhanced debug logs
+    // Debug logs
     console.log("=== POST /api Request ===");
     console.log("Request body:", {
       textLength: text?.length,
@@ -61,6 +69,7 @@ app.post("/api", async (req, res) => {
       throw new Error("Missing required fields: text and images");
     }
 
+    // Build your prompt for OpenAI
     const prompt = `
       Extract product details from the following page content.
       Return a JSON object with these fields: 
@@ -83,6 +92,8 @@ app.post("/api", async (req, res) => {
 
     console.log("OpenAI raw response:", aiResponse.choices[0].message.content);
     const data = JSON.parse(aiResponse.choices[0].message.content);
+
+    // Attach original URL if provided
     data.link = url || "";
 
     res.json(data);
@@ -104,7 +115,7 @@ app.post("/api", async (req, res) => {
   }
 });
 
-// For local development
+// For local development only
 const PORT = process.env.PORT || 3000;
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
@@ -112,5 +123,5 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// For Vercel
+// Export for Vercel
 export default app;
