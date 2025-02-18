@@ -1,7 +1,7 @@
 import express from "express";
 import { OpenAI } from "openai";
 import dotenv from "dotenv";
-import cors from "express-cors";
+import cors from "cors";
 
 dotenv.config();
 
@@ -11,8 +11,9 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // Use cors middleware
 app.use(
   cors({
-    allowedOrigins: ["*"],
-    headers: ["Content-Type"],
+    origin: "*",
+    methods: ["POST", "GET", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Accept"],
   })
 );
 
@@ -22,6 +23,10 @@ app.use(express.json());
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: "Something broke!" });
+});
+
+app.get("/api", (req, res) => {
+  res.json({ message: "Material Companion API is running" });
 });
 
 app.post("/api", async (req, res) => {
